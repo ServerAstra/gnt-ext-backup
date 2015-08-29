@@ -32,4 +32,4 @@ Check `help(lg.lookingglass)` for more info
 
 Todo:
 -------------
-* Nothing, this does enough for what it does
+* Add VM custom config from gnt-list data as a yaml file accompanying the main one
