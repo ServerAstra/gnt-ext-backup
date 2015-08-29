@@ -56,7 +56,7 @@ class gnt_ext_backup(object):
     debug               -- Do not perform actions if set, just print them
 
     """
-       
+
     def __init__(self, **kwargs):
         # Set instance defaults
         self.unique_id = datetime.now().strftime("%Y-%m-%d-%H")
@@ -71,15 +71,16 @@ class gnt_ext_backup(object):
         # For simplicity set to timestamp
         for i in ['unique_id', 'retention_period', 'backup_user_server',
                   'lv_backup_extension', 'backup_extension', 'backup_folder',
-                  'compression', 'debug','instances_names']:
-            if kwargs.has_key(i):
+                  'compression', 'debug', 'instances_names']:
+            if i in kwargs and kwargs[i]:
                 setattr(self, i, kwargs[i])
-            assrt(self.__dict__[i], "%s is not set" % i)
+            assrt(self.__dict__[i] is not None, "%s is not set" % i)
 
         if not self.instances_names:
             instances_raw_info = do('gnt-instance info --all')
         else:
-            instances_raw_info = do('gnt-instance info '+' '.join(self.instances_names))
+            instances_raw_info = do(
+                'gnt-instance info ' + ' '.join(self.instances_names))
         self.instances = yaml.load(instances_raw_info.stdout.read())
 
         self.ssh_cmd = 'ssh -oStrictHostKeyChecking=no ' + \
@@ -98,7 +99,6 @@ class gnt_ext_backup(object):
               self.backup_user_server)
         assrt(len(self.backup_user_server.split('@')) == 2, "%r is incorrect" %
               self.backup_user_server)
-        self.perform_backup()
 
     def perform_backup(self):
         for instance in self.instances:
@@ -112,7 +112,8 @@ class gnt_ext_backup(object):
                 drive = {}
                 drive['vg'], drive['lv'] = disk[0].split('/')
 
-                print('{}: Backing up {} {}'.format(self.unique_id, name, disk[0]))
+                print(
+                    '{}: Backing up {} {}'.format(self.unique_id, name, disk[0]))
                 cmd_list = [
                     [
                         command,
@@ -125,7 +126,8 @@ class gnt_ext_backup(object):
                     [
                         command,
                         "\"dd if=" +
-                        '.'.join([disk[1], self.unique_id, self.lv_backup_extension]),
+                        '.'.join(
+                            [disk[1], self.unique_id, self.lv_backup_extension]),
                         "bs=128M",
                         self.compression['egress'],
                         self.ssh_cmd,
@@ -138,7 +140,8 @@ class gnt_ext_backup(object):
                     [
                         command,
                         "\"lvremove -f",
-                        '.'.join([disk[0], self.unique_id, self.lv_backup_extension]),
+                        '.'.join(
+                            [disk[0], self.unique_id, self.lv_backup_extension]),
                         "\""
                     ]
                 ]
@@ -232,7 +235,7 @@ if __name__ == '__main__':
     arguments = {}
     for i in ['unique_id', 'retention_period', 'backup_user_server',
               'lv_backup_extension', 'backup_extension', 'backup_folder',
-              'compression', 'debug','instances_names']:
+              'compression', 'debug', 'instances_names']:
         if hasattr(a, i) and getattr(a, i):
             arguments[i] = getattr(a, i)
     backup_job = gnt_ext_backup(**arguments)
