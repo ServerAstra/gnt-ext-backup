@@ -19,10 +19,7 @@ SOFTWARE.
 """
 from datetime import datetime
 from subprocess import Popen, PIPE
-import re
-import time
 import yaml
-import socket
 import json
 
 
