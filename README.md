@@ -28,7 +28,7 @@ Or you can chmod it to 700
 ```
 Any additional hacks can be applied before init of class
 
-Check `help(lg.lookingglass)` for more info
+Check `help(gnt_ext_backup.gnt_ext_backup)` for more info
 
 Todo:
 -------------
