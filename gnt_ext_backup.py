@@ -56,6 +56,7 @@ class gnt_ext_backup(object):
 
     def __init__(self, **kwargs):
         # Set instance defaults
+        # For simplicity set to timestamp
         self.unique_id = datetime.now().strftime("%Y-%m-%d-%H")
         self.retention_period = 7
         self.backup_user_server = None
@@ -65,10 +66,11 @@ class gnt_ext_backup(object):
         self.compression = {'egress': '| lz4 -1c |', 'ingress': 'lz4 -dc >'}
         self.debug = 0
         self.instances_names = None
-        # For simplicity set to timestamp
+        self.dd_buffer = '128M'
+        self.lv_size = '1G'
         for i in ['unique_id', 'retention_period', 'backup_user_server',
                   'lv_backup_extension', 'backup_extension', 'backup_folder',
-                  'compression', 'debug', 'instances_names']:
+                  'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size']:
             if i in kwargs and kwargs[i]:
                 setattr(self, i, kwargs[i])
             assrt(self.__dict__[i] is not None, "%s is not set" % i)
@@ -114,7 +116,7 @@ class gnt_ext_backup(object):
                 cmd_list = [
                     [
                         command,
-                        "\"lvcreate -L1G -s -n",
+                        "\"lvcreate -L" + self.lv_size + " -s -n",
                         '.'.join(
                             [drive['lv'], self.unique_id, self.lv_backup_extension]),
                         disk[1],
@@ -125,7 +127,7 @@ class gnt_ext_backup(object):
                         "\"dd if=" +
                         '.'.join(
                             [disk[1], self.unique_id, self.lv_backup_extension]),
-                        "bs=128M",
+                        "bs=" + self.dd_buffer,
                         self.compression['egress'],
                         self.ssh_cmd,
                         "'" + self.compression['ingress'],
@@ -214,6 +216,13 @@ if __name__ == '__main__':
                         default=None,
                         help="Backup extension for files on the backup target",
                         required=False)
+    parser.add_argument("-f",
+                        "--backup_folder",
+                        type=str,
+                        dest='backup_folder',
+                        default=None,
+                        help="Backup folder on remote server",
+                        required=False)
     parser.add_argument("-c",
                         "--compression",
                         type=json.loads,
@@ -228,11 +237,23 @@ if __name__ == '__main__':
                         default=None,
                         help="If debug is 1 - disable performing actions and just print them out",
                         required=False)
+    parser.add_argument("--lv_size",
+                        type=str,
+                        dest='lv_size',
+                        default=None,
+                        help="LV snapshot size - default 1G, check man lvcreate for snapshot sizes",
+                        required=False)
+    parser.add_argument("--dd_buffer",
+                        type=str,
+                        dest='dd_buffer',
+                        default=None,
+                        help="dd buffer size, default 128MB for fast gbit transfers, adjust to your memory and network size",
+                        required=False)
     a = parser.parse_args()
     arguments = {}
     for i in ['unique_id', 'retention_period', 'backup_user_server',
               'lv_backup_extension', 'backup_extension', 'backup_folder',
-              'compression', 'debug', 'instances_names']:
+              'compression', 'debug', 'instances_names', 'lv_size', 'dd_buffer']:
         if hasattr(a, i) and getattr(a, i):
             arguments[i] = getattr(a, i)
     backup_job = gnt_ext_backup(**arguments)
