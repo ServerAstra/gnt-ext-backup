@@ -73,7 +73,8 @@ class gnt_ext_backup(object):
                   'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size']:
             if i in kwargs and kwargs[i]:
                 setattr(self, i, kwargs[i])
-            assrt(self.__dict__[i] is not None, "%s is not set" % i)
+            if i != 'instances_names':  # It can be None
+                assrt(self.__dict__[i] is not None, "%s is not set" % i)
 
         if not self.instances_names:
             instances_raw_info = do('gnt-instance info --all')
