@@ -63,7 +63,7 @@ class gnt_ext_backup(object):
         self.lv_backup_extension = 'bak'
         self.backup_folder = './upload/'
         self.backup_extension = 'raw'
-        self.compression = {'egress': '| lz4 -1c |', 'ingress': 'lz4 -dc >'}
+        self.compression = {'egress': '| lz4 -1c |', 'ingress': 'lz4 -dc |'}
         self.debug = 0
         self.instances_names = None
         self.dd_buffer = '128M'
@@ -132,7 +132,8 @@ class gnt_ext_backup(object):
                         self.compression['egress'],
                         self.ssh_cmd,
                         "'" + self.compression['ingress'],
-                        self.backup_folder +
+                        "dd bs=" + self.dd_buffer,
+                        "of=" + self.backup_folder +
                         '.'.join(
                             [self.unique_id, drive['lv'], name, primary_node, self.backup_extension]),
                         "'\""
