@@ -21,6 +21,7 @@ from datetime import datetime
 from subprocess import Popen, PIPE
 import yaml
 import json
+import signal
 
 
 def assrt(check, error=None):
@@ -68,6 +69,7 @@ class gnt_ext_backup(object):
         self.instances_names = None
         self.dd_buffer = '128M'
         self.lv_size = '1G'
+        self.instances_complete = 0
         for i in ['unique_id', 'retention_period', 'backup_user_server',
                   'lv_backup_extension', 'backup_extension', 'backup_folder',
                   'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size']:
@@ -99,6 +101,10 @@ class gnt_ext_backup(object):
               self.backup_user_server)
         assrt(len(self.backup_user_server.split('@')) == 2, "%r is incorrect" %
               self.backup_user_server)
+        signal.signal(signal.SIGHUP, self.wall)
+
+    def wall(self, signum, frame):
+        do('echo "{}% backup done" | wall'.format(self.instances_complete/len(self.instances))
 
     def perform_backup(self):
         for instance in self.instances:
@@ -153,6 +159,7 @@ class gnt_ext_backup(object):
                         do(' '.join(cmd)).wait()
                 print('{}: Done {} {}'.format(self.unique_id, name, disk[0]))
                 print('-' * 100)
+                self.instances_complete += 1
         cmd = [
             self.ssh_cmd,
             "\"",
