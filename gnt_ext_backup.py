@@ -104,7 +104,7 @@ class gnt_ext_backup(object):
         signal.signal(signal.SIGHUP, self.wall)
 
     def wall(self, signum, frame):
-        do('echo "{}% backup done" | wall'.format(self.instances_complete/len(self.instances))
+        do('echo "{}% backup done" | wall'.format(self.instances_complete / len(self.instances)))
 
     def perform_backup(self):
         for instance in self.instances:
