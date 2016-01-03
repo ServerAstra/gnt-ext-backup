@@ -47,12 +47,13 @@ class gnt_ext_backup(object):
     unique_id           -- Unique identifier for backups (default set to current date and hour)
     retention_period    -- Backup retention period (default set to 1 day)
     backup_user_server  -- login@server.hostname credentials for SSH (default not set). Key auth for SSH should be setup beforehand,
-                            I suggest chroot on target (or even jail) with only lz4, sh and find commands
+                            I suggest chroot on target (or even jail) with only lz4, sh, dd and find commands
     lv_backup_extension -- Extension for LV name of backup snapshot, without dot (default is bak)
     backup_folder       -- Remote server folder to place backups (default is ./upload/)
     backup_extension    -- Extension for resulting backup files (default is raw)
     compression         -- Dictionary of ingress and egress (default lz4 commands, do not remove the pipes!)
     debug               -- Do not perform actions if set, just print them
+    ignore_suspended    -- Defaults to true. Whether to ignore suspended instances
 
     """
 
@@ -72,9 +73,10 @@ class gnt_ext_backup(object):
         self.lv_size = '1G'
         self.instances_complete = 0
         self.stop = 0
+        self.ignore_suspended = False
         for i in ['unique_id', 'retention_period', 'backup_user_server',
                   'lv_backup_extension', 'backup_extension', 'backup_folder',
-                  'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size']:
+                  'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size', 'ignore_suspended']:
             if i in kwargs and kwargs[i]:
                 setattr(self, i, kwargs[i])
             if i != 'instances_names':  # It can be None
@@ -120,6 +122,8 @@ class gnt_ext_backup(object):
         if self.stop:
             sys.exit(1)
         for instance in self.instances:
+            if 'state is down' in instance['State'] and self.ignore_suspended:
+                continue
             name = instance['Instance name']
             primary_node = [i['primary']
                             for i in instance['Nodes'] if 'primary' in i][0]
@@ -129,7 +133,6 @@ class gnt_ext_backup(object):
             for disk in disks:
                 drive = {}
                 drive['vg'], drive['lv'] = disk[0].split('/')
-
                 print(
                     '{}: Backing up {} {}'.format(self.unique_id, name, disk[0]))
                 cmd_list = [
@@ -201,6 +204,12 @@ if __name__ == '__main__':
                         type=str,
                         default=None,
                         help="Unique id to identify backups, default is date with hour",
+                        required=False)
+    parser.add_argument("-I",
+                        "--ignore-suspended",
+                        dest='ignore_suspended',
+                        action='store_true',
+                        help="Whether to ignore or not the suspended systems",
                         required=False)
     parser.add_argument("-n",
                         "--instances_names",
@@ -274,7 +283,7 @@ if __name__ == '__main__':
     arguments = {}
     for i in ['unique_id', 'retention_period', 'backup_user_server',
               'lv_backup_extension', 'backup_extension', 'backup_folder',
-              'compression', 'debug', 'instances_names', 'lv_size', 'dd_buffer']:
+              'compression', 'debug', 'instances_names', 'lv_size', 'dd_buffer', 'ignore_suspended']:
         if hasattr(a, i) and getattr(a, i):
             arguments[i] = getattr(a, i)
     backup_job = gnt_ext_backup(**arguments)
