@@ -22,6 +22,7 @@ from subprocess import Popen, PIPE
 import yaml
 import json
 import signal
+import sys
 
 
 def assrt(check, error=None):
@@ -70,6 +71,7 @@ class gnt_ext_backup(object):
         self.dd_buffer = '128M'
         self.lv_size = '1G'
         self.instances_complete = 0
+        self.stop = 0
         for i in ['unique_id', 'retention_period', 'backup_user_server',
                   'lv_backup_extension', 'backup_extension', 'backup_folder',
                   'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size']:
@@ -102,11 +104,21 @@ class gnt_ext_backup(object):
         assrt(len(self.backup_user_server.split('@')) == 2, "%r is incorrect" %
               self.backup_user_server)
         signal.signal(signal.SIGHUP, self.wall)
+        signal.signal(signal.SIGKILL, self.cancel)
+        signal.signal(signal.SIGTERM, self.cancel)
 
     def wall(self, signum, frame):
-        do('echo "{}% backup done" | wall'.format(self.instances_complete / len(self.instances)))
+        do('echo "{}% backup done" | wall'.format(
+            int((float(self.instances_complete) / len(self.instances)) * 100)))
+
+    def cancel(self, signum, frame):
+        self.stop = 1
+        do('echo "{}% backup done, waiting for jobs to finish" | wall'.format(
+            int((float(self.instances_complete) / len(self.instances)) * 100)))
 
     def perform_backup(self):
+        if self.stop:
+            sys.exit(1)
         for instance in self.instances:
             name = instance['Instance name']
             primary_node = [i['primary']
