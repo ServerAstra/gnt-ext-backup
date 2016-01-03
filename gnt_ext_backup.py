@@ -106,7 +106,6 @@ class gnt_ext_backup(object):
         assrt(len(self.backup_user_server.split('@')) == 2, "%r is incorrect" %
               self.backup_user_server)
         signal.signal(signal.SIGHUP, self.wall)
-        signal.signal(signal.SIGKILL, self.cancel)
         signal.signal(signal.SIGTERM, self.cancel)
 
     def wall(self, signum, frame):
