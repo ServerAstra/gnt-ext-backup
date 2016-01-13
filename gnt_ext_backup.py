@@ -53,7 +53,9 @@ class gnt_ext_backup(object):
     backup_extension    -- Extension for resulting backup files (default is raw)
     compression         -- Dictionary of ingress and egress (default lz4 commands, do not remove the pipes!)
     debug               -- Do not perform actions if set, just print them
-    ignore_suspended    -- Defaults to true. Whether to ignore suspended instances
+    ignore_suspended    -- Defaults to False. Whether to ignore suspended instances
+    no_cleanup          -- Defaults to False. Whether to cleanup old backups after backup
+
 
     """
 
@@ -74,9 +76,10 @@ class gnt_ext_backup(object):
         self.instances_complete = 0
         self.stop = 0
         self.ignore_suspended = False
+        self.no_cleanup = False
         for i in ['unique_id', 'retention_period', 'backup_user_server',
                   'lv_backup_extension', 'backup_extension', 'backup_folder',
-                  'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size', 'ignore_suspended']:
+                  'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size', 'ignore_suspended','no_cleanup']:
             if i in kwargs and kwargs[i]:
                 setattr(self, i, kwargs[i])
             if i != 'instances_names':  # It can be None
@@ -174,23 +177,24 @@ class gnt_ext_backup(object):
                 print('{}: Done {} {}'.format(self.unique_id, name, disk[0]))
                 print('-' * 100)
                 self.instances_complete += 1
-        cmd = [
-            self.ssh_cmd,
-            "\"",
-            'find',
-            self.backup_folder,
-            '-name \'' + '.'.join(
-                ['*', '*', '*', '*', self.backup_extension]) + '\'',
-            '-ctime +' + str(self.retention_period),
-            '-delete',
-            "\""
-        ]
-        if self.debug:
-            print(' '.join(cmd))
-        else:
-            do(' '.join(cmd)).wait()
-        print('Done cleaning old backups')
-        print('-' * 100)
+        if not self.no_cleanup:
+            cmd = [
+                self.ssh_cmd,
+                "\"",
+                'find',
+                self.backup_folder,
+                '-name \'' + '.'.join(
+                    ['*', '*', '*', '*', self.backup_extension]) + '\'',
+                '-ctime +' + str(self.retention_period),
+                '-delete',
+                "\""
+            ]
+            if self.debug:
+                print(' '.join(cmd))
+            else:
+                do(' '.join(cmd)).wait()
+            print('Done cleaning old backups')
+            print('-' * 100)
 
 
 if __name__ == '__main__':
@@ -209,6 +213,12 @@ if __name__ == '__main__':
                         dest='ignore_suspended',
                         action='store_true',
                         help="Whether to ignore or not the suspended systems",
+                        required=False)
+    parser.add_argument("-N",
+                        "--no-cleanup",
+                        dest='no_cleanup',
+                        action='store_true',
+                        help="Disable cleanup of old backups (you cleanup on your own)",
                         required=False)
     parser.add_argument("-n",
                         "--instances_names",
@@ -282,7 +292,7 @@ if __name__ == '__main__':
     arguments = {}
     for i in ['unique_id', 'retention_period', 'backup_user_server',
               'lv_backup_extension', 'backup_extension', 'backup_folder',
-              'compression', 'debug', 'instances_names', 'lv_size', 'dd_buffer', 'ignore_suspended']:
+              'compression', 'debug', 'instances_names', 'lv_size', 'dd_buffer', 'ignore_suspended','no_cleanup']:
         if hasattr(a, i) and getattr(a, i):
             arguments[i] = getattr(a, i)
     backup_job = gnt_ext_backup(**arguments)
