@@ -79,7 +79,7 @@ class gnt_ext_backup(object):
         self.no_cleanup = False
         for i in ['unique_id', 'retention_period', 'backup_user_server',
                   'lv_backup_extension', 'backup_extension', 'backup_folder',
-                  'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size', 'ignore_suspended','no_cleanup']:
+                  'compression', 'debug', 'instances_names', 'dd_buffer', 'lv_size', 'ignore_suspended', 'no_cleanup']:
             if i in kwargs and kwargs[i]:
                 setattr(self, i, kwargs[i])
             if i != 'instances_names':  # It can be None
@@ -92,7 +92,7 @@ class gnt_ext_backup(object):
                 'gnt-instance info ' + ' '.join(self.instances_names))
         self.instances = yaml.load(instances_raw_info.stdout.read())
 
-        self.ssh_cmd = 'ssh -oStrictHostKeyChecking=no ' + \
+        self.ssh_cmd = 'ssh -c arcfour -oCompression=no -oStrictHostKeyChecking=no ' + \
             self.backup_user_server
         assrt(isinstance(self.retention_period, int), "%r is not int" %
               self.retention_period)
@@ -292,7 +292,7 @@ if __name__ == '__main__':
     arguments = {}
     for i in ['unique_id', 'retention_period', 'backup_user_server',
               'lv_backup_extension', 'backup_extension', 'backup_folder',
-              'compression', 'debug', 'instances_names', 'lv_size', 'dd_buffer', 'ignore_suspended','no_cleanup']:
+              'compression', 'debug', 'instances_names', 'lv_size', 'dd_buffer', 'ignore_suspended', 'no_cleanup']:
         if hasattr(a, i) and getattr(a, i):
             arguments[i] = getattr(a, i)
     backup_job = gnt_ext_backup(**arguments)
