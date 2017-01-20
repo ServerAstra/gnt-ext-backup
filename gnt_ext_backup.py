@@ -92,7 +92,7 @@ class gnt_ext_backup(object):
                 'gnt-instance info ' + ' '.join(self.instances_names))
         self.instances = yaml.load(instances_raw_info.stdout.read())
 
-        self.ssh_cmd = 'ssh -c arcfour -oCompression=no -oStrictHostKeyChecking=no ' + \
+        self.ssh_cmd = 'ssh -c aes128-ctr -oCompression=no -oStrictHostKeyChecking=no ' + \
             self.backup_user_server
         assrt(isinstance(self.retention_period, int), "%r is not int" %
               self.retention_period)
