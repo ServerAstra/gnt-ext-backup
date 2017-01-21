@@ -1,0 +1,3 @@
+[submodule "singletony"]
+	path = singletony
+	url = https://github.com/andrew-azarov/singletony
