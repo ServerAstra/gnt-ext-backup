@@ -19,6 +19,8 @@ SOFTWARE.
 """
 from datetime import datetime
 from subprocess import Popen, PIPE
+from singletony import Singlet
+__LOCK__ = Singlet()
 import yaml
 import json
 import signal
